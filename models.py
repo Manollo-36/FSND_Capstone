@@ -24,7 +24,7 @@ def setup_db(app, database_path=database_path):
 
 
 class Actor(db.Model):
-    __tablename__ = 'Actor'
+    __tablename__ = 'actor'
     id = Column(Integer, primary_key=True)
     full_name = Column(String,nullable=False)
     age = Column(Integer,nullable=False)
@@ -57,7 +57,7 @@ class Actor(db.Model):
 
 
 class Movies(db.Model):  
-    __tablename__ = 'Movies'
+    __tablename__ = 'movies'
     id = Column(Integer, primary_key=True)
     actor_id= db.Column(db.Integer,db.ForeignKey('actor.id'),nullable=False)  
     title = Column(String,nullable=False)
