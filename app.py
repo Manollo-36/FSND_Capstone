@@ -109,32 +109,32 @@ def create_app(test_config=None):
                     return not_found(404)  
             else:
                 actor.title = new_title
-                actor.recipe = json.dumps(new_recipe) 
+                #actor.recipe = json.dumps(new_recipe) 
                 
                 actor.update()
             
-                return jsonify({ "success": True, "drinks": [drink.long()]})
+                return jsonify({ "success": True, "actor": [actor.format()]})
         except Exception as ex:
             print(ex)
             return unprocessable(422)
 
 
 
-    @app.route('/drinks/<int:drink_id>',methods=['DELETE'])
-    @requires_auth('delete:drinks')
-    def delete_drinks(self,drink_id):
-        try:
-            #print (f"drink_id: {drink_id}")
-            drink = Drink.query.filter(Drink.id == drink_id).one_or_none()
-            #print(f"drink: {drink}")
-            if drink is None:
-                return not_found(404)
-            else: 
-                drink.delete()
-                return jsonify({"success": True, "delete": drink_id})
-        except Exception as ex:
-            print(ex)
-            return unprocessable(422)
+    # @app.route('/drinks/<int:drink_id>',methods=['DELETE'])
+    # @requires_auth('delete:drinks')
+    # def delete_drinks(self,drink_id):
+    #     try:
+    #         #print (f"drink_id: {drink_id}")
+    #         drink = Drink.query.filter(Drink.id == drink_id).one_or_none()
+    #         #print(f"drink: {drink}")
+    #         if drink is None:
+    #             return not_found(404)
+    #         else: 
+    #             drink.delete()
+    #             return jsonify({"success": True, "delete": drink_id})
+    #     except Exception as ex:
+    #         print(ex)
+    #         return unprocessable(422)
    
 # Error Handling
     @app.errorhandler(422)
