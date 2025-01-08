@@ -3,8 +3,7 @@ import os
 from sqlalchemy import Column, String,Integer,DateTime
 from flask_sqlalchemy import SQLAlchemy
 import json
-env = os.environ
-print (env)
+
 database_path = os.environ['DATABASE_URL']
 if database_path.startswith("postgres://"):
   database_path = database_path.replace("postgres://", "postgresql://", 1)
@@ -24,43 +23,23 @@ def setup_db(app, database_path=database_path):
     db.create_all()
 
 
-class Actors(db.Model):  
-  __tablename__ = 'Actors'
-
-  id = Column(Integer, primary_key=True)
-  name = Column(String,nullable=False)
-  age = Column(Integer,nullable=False)
-  gender = Column(String,nullable=False)
- 
-
-  def __init__(self, title, release_date):
-    self.title = title
-    self.release_date = release_date
-
-  def format(self):
-    return {
-      'id': self.id,
-      'title': self.title,
-      'release_date': self.release_date}
-  
-class Movies(db.Model):  
-    __tablename__ = 'Movies'
+class Actor(db.Model):
+    __tablename__ = 'Actor'
     id = Column(Integer, primary_key=True)
-    title = Column(String,nullable=False)
-    release_date = Column(DateTime,nullable=True)
-    duration = Column(Integer, nullable=False)
-    imdb_rating = Column(Integer, nullable=False)
-    cast = db.relationship('Actor',backref='movies', lazy='joined',cascade='all,delete')
+    full_name = Column(String,nullable=False)
+    age = Column(Integer,nullable=False)
+    gender = Column(String,nullable=False)
 
-    def __init__(self, name, age,gender):
-        self.name = name
-        self.age = age
-        self.gender = gender
+ 
+    def __init__(self, full_name, age,gender):
+            self.full_name = full_name
+            self.age = age
+            self.gender = gender
 
     def format(self):
         return {
             'id': self.id,
-            'name': self.name,
+            'full_name': self.full_name,
             'age': self.age,
             'gender':self.gender}
     
@@ -75,5 +54,41 @@ class Movies(db.Model):
     def update(self):
         db.session.commit()
 
-    def __repr__(self):
-        return json.dumps(self.short())
+
+
+class Movies(db.Model):  
+    __tablename__ = 'Movies'
+    id = Column(Integer, primary_key=True)
+    actor_id= db.Column(db.Integer,db.ForeignKey('actor.id'),nullable=False)  
+    title = Column(String,nullable=False)
+    release_date = Column(DateTime,nullable=True)
+    duration = Column(Integer, nullable=False)
+    imdb_rating = Column(Integer, nullable=False)
+    cast = db.relationship('Actor',backref='movies', lazy='joined',cascade='all,delete')
+
+    def __init__(self, title, release_date,duration,imdb_rating,cast):
+        self.title = title
+        self.release_date = release_date
+        self.duration =duration
+        self.imdb_rating =imdb_rating
+        self.cast =cast
+
+    def format(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'release_date': self.release_date}    
+        
+    def insert(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()  
+
+    def update(self):
+        db.session.commit()
+
+def __repr__(self):
+    return json.dumps(self.short())
