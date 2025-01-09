@@ -31,10 +31,10 @@ class Actor(db.Model):
     gender = Column(String,nullable=False)
 
  
-    def __init__(self, full_name, age,gender):
-            self.full_name = full_name
-            self.age = age
-            self.gender = gender
+    # def __init__(self, full_name, age,gender):
+    #         self.full_name = full_name
+    #         self.age = age
+    #         self.gender = gender
 
     def format(self):
         return {
@@ -61,17 +61,17 @@ class Movies(db.Model):
     id = Column(Integer, primary_key=True)
     actor_id= db.Column(db.Integer,db.ForeignKey('actor.id'),nullable=False)  
     title = Column(String,nullable=False)
-    release_date = Column(DateTime,nullable=True)
+    release_date = Column(String,nullable=True)
     duration = Column(Integer, nullable=False)
     imdb_rating = Column(Integer, nullable=False)
     cast = db.relationship('Actor',backref='movies', lazy='joined',cascade='all,delete')
 
-    def __init__(self, title, release_date,duration,imdb_rating,cast):
-        self.title = title
-        self.release_date = release_date
-        self.duration =duration
-        self.imdb_rating =imdb_rating
-        self.cast =cast
+    # def __init__(self, title, release_date,duration,imdb_rating,cast):
+    #     self.title = title
+    #     self.release_date = release_date
+    #     self.duration =duration
+    #     self.imdb_rating =imdb_rating
+    #     self.cast =cast
 
     def format(self):
         return {

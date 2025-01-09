@@ -1,17 +1,16 @@
 #import os
-from flask_sqlalchemy import SQLAlchemy
 from flask import Flask,jsonify,request
 from flask_cors import CORS
 import json
-from models import setup_db, Actor,Movies
-from auth import AuthError, requires_auth
+from models import setup_db, Actor,Movies,db
+from Authentication.auth import AuthError, requires_auth
 
 def create_app(test_config=None):
     app = Flask(__name__)
     setup_db(app)
     CORS(app)
 
-    @app.route('/actor',methods=['GET'])
+    @app.route('/Actor',methods=['GET'])
     #@requires_auth('get:Actors')
     def get_actors():
       try:
@@ -45,8 +44,8 @@ def create_app(test_config=None):
     
 
     @app.route('/Actors/and/Movies',methods=['POST'])
-    @requires_auth('post:ActorsandMovies')
-    def add_actor_movies(self):  
+    #@requires_auth('post:ActorsandMovies')
+    def add_actor_movies():  
         body = request.get_json()
         #Actor
         full_name = body["full_name"]
@@ -104,15 +103,24 @@ def create_app(test_config=None):
 
         try:
             actor = Actor.query.filter(Actor.id == actor_id).one_or_none()
+            movies = Movies.query.filter(Movies.id == movie_id).one_or_none()
 
-            if actor is None:               
-                    return not_found(404)  
+            if actor is None or movies is None:               
+                    return not_found(404)
             else:
-                actor.title = new_title
-                #actor.recipe = json.dumps(new_recipe) 
+                actor.full_name = new_full_name
+                actor.age = new_age
+                actor.gender = new_gender 
                 
                 actor.update()
-            
+
+                movies.title = new_title
+                movies.release_date = new_release_date
+                movies.duration = new_duration
+                movies.imdb_rating = new_imdb_rating
+
+                movies.update()
+                
                 return jsonify({ "success": True, "actor": [actor.format()]})
         except Exception as ex:
             print(ex)
@@ -120,21 +128,23 @@ def create_app(test_config=None):
 
 
 
-    # @app.route('/drinks/<int:drink_id>',methods=['DELETE'])
-    # @requires_auth('delete:drinks')
-    # def delete_drinks(self,drink_id):
-    #     try:
-    #         #print (f"drink_id: {drink_id}")
-    #         drink = Drink.query.filter(Drink.id == drink_id).one_or_none()
-    #         #print(f"drink: {drink}")
-    #         if drink is None:
-    #             return not_found(404)
-    #         else: 
-    #             drink.delete()
-    #             return jsonify({"success": True, "delete": drink_id})
-    #     except Exception as ex:
-    #         print(ex)
-    #         return unprocessable(422)
+    @app.route('/actor/<int:actor_id>/and/movies/<int:movie_id>',methods=['DELETE'])
+    @requires_auth('delete:drinks')
+    def delete_actor_movie(self,actor_id,movie_id):
+        try:
+            #print (f"drink_id: {drink_id}")
+            actor = Actor.query.filter(Actor.id == actor_id).one_or_none()
+            movies = Movies.query.filter(Movies.id == movie_id).one_or_none()
+            #print(f"drink: {drink}")
+            if actor is None or movies is None:
+                return not_found(404)
+            else: 
+                actor.delete()
+                movies.delete()
+                return jsonify({"success": True, "deleted": actor_id,"Movie":movie_id})
+        except Exception as ex:
+            print(ex)
+            return unprocessable(422)
    
 # Error Handling
     @app.errorhandler(422)
