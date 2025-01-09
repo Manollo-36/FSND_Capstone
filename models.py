@@ -26,8 +26,8 @@ def setup_db(app, database_path=database_path):
 #association_table
 actor_movie = db.Table('actor_movie',
     Column('id', db.Integer, primary_key=True),
-    Column('movie_id', db.Integer, db.ForeignKey('Movie.id')),
-    Column('actor_id', db.Integer, db.ForeignKey('Actor.id'))
+    Column('movie_id', db.Integer, db.ForeignKey('Movies.id')),
+    Column('actor_id', db.Integer, db.ForeignKey('Actors.id'))
 )
 
 class Movie(db.Model):  
