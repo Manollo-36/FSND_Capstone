@@ -23,19 +23,21 @@ def setup_db(app, database_path=database_path):
     db.drop_all()
     db.create_all()
 
-# actor_in_movie = db.Table('actor_in_movie',
-#     db.Column('actor_id', db.Integer, db.ForeignKey('actors.id'), primary_key=True),
-#     db.Column('movie_id', db.Integer, db.ForeignKey('movies.id'), primary_key=True)
-# )
+#association_table
+actor_movie = db.Table('actor_movie',
+    Column('id', db.Integer, primary_key=True),
+    Column('movie_id', db.Integer, db.ForeignKey('Movie.id')),
+    Column('actor_id', db.Integer, db.ForeignKey('Actor.id'))
+)
 
 class Movie(db.Model):  
-    __tablename__ = 'movies'
+    __tablename__ = 'Movies'
     id = Column(Integer, primary_key=True)        
     title = Column(String,nullable=False)
     release_date = Column(String,nullable=True)
     duration = Column(String, nullable=False)
     imdb_rating = Column(Integer, nullable=False)
-    cast = db.relationship('Actor', backref='movie_cast', lazy=True,cascade='all, delete')
+    cast = db.relationship('Actor', secondary=actor_movie,backref=db.backref('movie_cast', lazy=True,cascade='all, delete' ))
 
     def __init__(self, title, release_date,duration,imdb_rating):
         self.title = title
@@ -63,15 +65,13 @@ class Movie(db.Model):
         db.session.commit()
 
 class Actor(db.Model):
-    __tablename__ = 'actors'
+    __tablename__ = 'Actors'
     id = Column(Integer, primary_key=True)
-    movie_id = Column(db.Integer,db.ForeignKey('movies.id'),nullable=False)  
     full_name = Column(String,nullable=False)
     age = Column(Integer,nullable=False)
     gender = Column(String,nullable=False)   
  
-    def __init__(self,movie_id, full_name, age,gender):
-            self.movie_id =movie_id
+    def __init__(self,full_name, age,gender):
             self.full_name = full_name
             self.age = age
             self.gender = gender
@@ -79,7 +79,6 @@ class Actor(db.Model):
     def format(self):
         return {
             'id': self.id,
-            'movie_id':self.movie_id,
             'full_name': self.full_name,
             'age': self.age,
             'gender':self.gender}

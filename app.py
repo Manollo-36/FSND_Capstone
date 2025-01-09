@@ -10,8 +10,8 @@ def create_app(test_config=None):
     setup_db(app)
     CORS(app)
 
-    @app.route('/actor',methods=['GET'])
-    #@requires_auth('get:Actors')
+    @app.route('/actors',methods=['GET'])
+    @requires_auth('get:actors')
     def get_actors():
       try:
         actors = Actor.query.order_by(Actor.id).all()
@@ -27,7 +27,7 @@ def create_app(test_config=None):
       return unprocessable(422)
 
     @app.route('/movies',methods=['GET'])
-    @requires_auth('get:Movies')
+    @requires_auth('get:movies')
     def get_movies():
       try:
         movies = Movie.query.order_by(Movie.id).all()
@@ -43,17 +43,11 @@ def create_app(test_config=None):
       return unprocessable(422)
     
 
-    @app.route('/actors/and/movies',methods=['POST'])
-    #@requires_auth('post:ActorsandMovies')
+    @app.route('/actors',methods=['POST'])
+    @requires_auth('post:actors')
     def create_actor():  
         body = request.get_json()
-        
-        #Movie
-        title = body["title"]
-        release_date = body["release_date"]
-        duration = body["duration"]
-        imdb_rating = body["imdb_rating"] 
-       
+
         #Actor
         full_name = body["full_name"]
         age = body["age"]
@@ -62,21 +56,9 @@ def create_app(test_config=None):
         try:
             if full_name =='' or age is None or gender is None:
                 return bad_request(400)
-            
-            elif title == "" or release_date is None or  duration is None or imdb_rating is None :
-                return bad_request(400)
-            else:               
-                new_movie = Movie(
-                    title =title,
-                    release_date =release_date,
-                    duration= duration,
-                    imdb_rating = imdb_rating
-                    #cast =cast
-                )
-                new_movie.insert() 
-                               
+            else:
+
                 new_actor = Actor(
-                        movie_id = new_movie.id,
                         full_name = full_name,
                         age = age,
                         gender = gender 
@@ -85,66 +67,55 @@ def create_app(test_config=None):
                     )
                 new_actor.insert()
 
-                response = { "success": True,"New_Actor":new_actor.id, "Actor": [new_actor.format()],"New Movie":new_movie.id, "Movie":[new_movie.format()]}
+                response = { "success": True,"New_Actor":new_actor.id, "Actor": [new_actor.format()]}
                 return jsonify(response)
         except Exception as ex:
             print(ex)
             return unprocessable(422)
         
-    # @app.route('/movies',methods=['POST'])
-    # #@requires_auth('post:ActorsandMovies')
-    # def create_movies():  
-    #     body = request.get_json()
+    @app.route('/movies',methods=['POST'])
+    @requires_auth('post:movies')
+    def create_movies():  
+        body = request.get_json()
        
-    #     #Movie
-    #     title = body["title"]
-    #     release_date = body["release_date"]
-    #     duration = body["duration"]
-    #     imdb_rating = body["imdb_rating"] 
-    #     cast = body["cast"]
+        #Movie
+        title = body["title"]
+        release_date = body["release_date"]
+        duration = body["duration"]
+        imdb_rating = body["imdb_rating"] 
        
-    #     try:
+        try:
             
-    #         if title == "" or release_date is None or  duration is None or imdb_rating is None or cast is None:
-    #             return bad_request(400)
-    #         else:               
-    #             new_movie = Movie(
-    #                 title =title,
-    #                 release_date =release_date,
-    #                 duration= duration,
-    #                 imdb_rating = imdb_rating,
-    #                 cast =cast
-    #             )
-    #             new_movie.insert() 
+            if title == "" or release_date is None or  duration is None or imdb_rating is None:
+                return bad_request(400)
+            else:               
+                new_movie = Movie(
+                    title =title,
+                    release_date =release_date,
+                    duration= duration,
+                    imdb_rating = imdb_rating
+                )
+                new_movie.insert() 
 
-    #             response = { "success": True,"New Movie":new_movie.id, "Movie":[new_movie.format()]}
-    #             return jsonify(response)
-    #     except Exception as ex:
-    #         print(ex)
-    #         return unprocessable(422)
-
+                response = { "success": True,"New Movie":new_movie.id, "Movie":[new_movie.format()]}
+                return jsonify(response)
+        except Exception as ex:
+            print(ex)
+            return unprocessable(422)
    
         
-    @app.route('/Actor/<int:actor_id>/and/Movie/<int:movie_id>',methods=['PATCH'])
-    @requires_auth('patch:ActorAndMovie')
-    def update_drinks(self,actor_id,movie_id):  
+    @app.route('/Actor/<int:actor_id>',methods=['PATCH'])
+    @requires_auth('patch:actors')
+    def update_actor(self,actor_id):  
         body = request.get_json()
         new_full_name = body.get("full_name", None)
         new_age = body.get("age", None)
         new_gender = body.get("gender", None)
 
-        new_title =body.get("title", None)
-        new_release_date =body.get("release_date", None)
-        new_duration= body.get("duration", None)
-        new_imdb_rating = body.get("imdb_rating", None)
-        # new_title = new_drink_request["title"]
-        # new_recipe = new_drink_request["recipe"]
-
         try:
             actor = Actor.query.filter(Actor.id == actor_id).one_or_none()
-            movies = Movie.query.filter(Movie.id == movie_id).one_or_none()
-
-            if actor is None or movies is None:               
+           
+            if actor is None:               
                     return not_found(404)
             else:
                 actor.full_name = new_full_name
@@ -152,7 +123,29 @@ def create_app(test_config=None):
                 actor.gender = new_gender 
                 
                 actor.update()
+                
+                return jsonify({ "success": True, "actor": [actor.format()]})
+        except Exception as ex:
+            print(ex)
+            return unprocessable(422)
 
+    @app.route('/Movie/<int:movie_id>',methods=['PATCH'])
+    @requires_auth('patch:movies')
+    def update_movie(self,movie_id):  
+        body = request.get_json()
+
+        new_title =body.get("title", None)
+        new_release_date =body.get("release_date", None)
+        new_duration= body.get("duration", None)
+        new_imdb_rating = body.get("imdb_rating", None)
+       
+        try:
+            movies = Movie.query.filter(Movie.id == movie_id).one_or_none()
+
+            if movies is None:               
+                    return not_found(404)
+            else:
+             
                 movies.title = new_title
                 movies.release_date = new_release_date
                 movies.duration = new_duration
@@ -160,27 +153,38 @@ def create_app(test_config=None):
 
                 movies.update()
                 
-                return jsonify({ "success": True, "actor": [actor.format()]})
+                return jsonify({ "success": True, "Movie": [movies.format()]})
         except Exception as ex:
             print(ex)
             return unprocessable(422)
 
 
-
-    @app.route('/actor/<int:actor_id>/and/movies/<int:movie_id>',methods=['DELETE'])
-    @requires_auth('delete:drinks')
-    def delete_actor_movie(self,actor_id,movie_id):
+    @app.route('/actor/<int:actor_id>',methods=['DELETE'])
+    @requires_auth('delete:actors')
+    def delete_actor(self,actor_id):
         try:
             #print (f"drink_id: {drink_id}")
             actor = Actor.query.filter(Actor.id == actor_id).one_or_none()
-            movies = Movie.query.filter(Movie.id == movie_id).one_or_none()
-            #print(f"drink: {drink}")
-            if actor is None or movies is None:
+            if actor is None:
                 return not_found(404)
             else: 
                 actor.delete()
-                movies.delete()
-                return jsonify({"success": True, "deleted": actor_id,"Movie":movie_id})
+                return jsonify({"success": True, "deleted": actor_id,"Actor":actor.format()})
+        except Exception as ex:
+            print(ex)
+            return unprocessable(422)
+        
+    @app.route('/movies/<int:movie_id>',methods=['DELETE'])
+    @requires_auth('delete:movies')
+    def delete_movie(self,movie_id):
+        try:
+            movie = Movie.query.filter(Movie.id == movie_id).one_or_none()
+           
+            if movie is None:
+                return not_found(404)
+            else: 
+                movie.delete()
+                return jsonify({"success": True, "deleted": movie_id,"Movie":movie.format()})
         except Exception as ex:
             print(ex)
             return unprocessable(422)

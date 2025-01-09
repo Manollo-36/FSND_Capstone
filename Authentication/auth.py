@@ -7,7 +7,7 @@ from urllib.request import urlopen
 
 AUTH0_DOMAIN = 'fsndmanos.eu.auth0.com' #'udacity-fsnd.auth0.com'
 ALGORITHMS = ['RS256']
-API_AUDIENCE =  'CoffeeShop'#dev'
+API_AUDIENCE =  'Capstone'#dev'
 
 ## AuthError Exception
 '''
