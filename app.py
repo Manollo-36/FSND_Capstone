@@ -1,8 +1,8 @@
 #import os
 from flask import Flask,jsonify,request
 from flask_cors import CORS
-import json
-from models import setup_db, Actor,Movies,db
+#import json
+from models import setup_db, Actor,Movie
 from Authentication.auth import AuthError, requires_auth
 
 def create_app(test_config=None):
@@ -10,7 +10,7 @@ def create_app(test_config=None):
     setup_db(app)
     CORS(app)
 
-    @app.route('/Actor',methods=['GET'])
+    @app.route('/actor',methods=['GET'])
     #@requires_auth('get:Actors')
     def get_actors():
       try:
@@ -30,7 +30,7 @@ def create_app(test_config=None):
     @requires_auth('get:Movies')
     def get_movies():
       try:
-        movies = Movies.query.order_by(Movies.id).all()
+        movies = Movie.query.order_by(Movie.id).all()
         print (f"movies: {movies}")
         formated_movies= [movie.format() for movie in movies]
         print (f'formated_actors:{formated_movies}')    
@@ -43,27 +43,40 @@ def create_app(test_config=None):
       return unprocessable(422)
     
 
-    @app.route('/Actors/and/Movies',methods=['POST'])
+    @app.route('/actors/and/movies',methods=['POST'])
     #@requires_auth('post:ActorsandMovies')
-    def add_actor_movies():  
+    def create_actor():  
         body = request.get_json()
-        #Actor
-        full_name = body["full_name"]
-        age = body["age"]
-        gender = body["gender"]
+        
         #Movie
         title = body["title"]
         release_date = body["release_date"]
         duration = body["duration"]
-        imdb_rating = body["imdb_rating"]        
-
-
+        imdb_rating = body["imdb_rating"] 
+       
+        #Actor
+        full_name = body["full_name"]
+        age = body["age"]
+        gender = body["gender"]
+       
         try:
-            if full_name =='' or age is None or gender is None or title == "" or release_date is None or  duration is None or imdb_rating is None:
+            if full_name =='' or age is None or gender is None:
                 return bad_request(400)
-            else: 
-                
+            
+            elif title == "" or release_date is None or  duration is None or imdb_rating is None :
+                return bad_request(400)
+            else:               
+                new_movie = Movie(
+                    title =title,
+                    release_date =release_date,
+                    duration= duration,
+                    imdb_rating = imdb_rating
+                    #cast =cast
+                )
+                new_movie.insert() 
+                               
                 new_actor = Actor(
+                        movie_id = new_movie.id,
                         full_name = full_name,
                         age = age,
                         gender = gender 
@@ -72,19 +85,45 @@ def create_app(test_config=None):
                     )
                 new_actor.insert()
 
-                new_movie = Movies(
-                   title =title,
-                    release_date =release_date,
-                    duration= duration,
-                    imdb_rating = imdb_rating
-                )
-                new_movie.insert()
-                
-                response = { "success": True, "Actor": [new_actor.format()],"Movie":[new_movie.format()]}
+                response = { "success": True,"New_Actor":new_actor.id, "Actor": [new_actor.format()],"New Movie":new_movie.id, "Movie":[new_movie.format()]}
                 return jsonify(response)
         except Exception as ex:
             print(ex)
             return unprocessable(422)
+        
+    # @app.route('/movies',methods=['POST'])
+    # #@requires_auth('post:ActorsandMovies')
+    # def create_movies():  
+    #     body = request.get_json()
+       
+    #     #Movie
+    #     title = body["title"]
+    #     release_date = body["release_date"]
+    #     duration = body["duration"]
+    #     imdb_rating = body["imdb_rating"] 
+    #     cast = body["cast"]
+       
+    #     try:
+            
+    #         if title == "" or release_date is None or  duration is None or imdb_rating is None or cast is None:
+    #             return bad_request(400)
+    #         else:               
+    #             new_movie = Movie(
+    #                 title =title,
+    #                 release_date =release_date,
+    #                 duration= duration,
+    #                 imdb_rating = imdb_rating,
+    #                 cast =cast
+    #             )
+    #             new_movie.insert() 
+
+    #             response = { "success": True,"New Movie":new_movie.id, "Movie":[new_movie.format()]}
+    #             return jsonify(response)
+    #     except Exception as ex:
+    #         print(ex)
+    #         return unprocessable(422)
+
+   
         
     @app.route('/Actor/<int:actor_id>/and/Movie/<int:movie_id>',methods=['PATCH'])
     @requires_auth('patch:ActorAndMovie')
@@ -103,7 +142,7 @@ def create_app(test_config=None):
 
         try:
             actor = Actor.query.filter(Actor.id == actor_id).one_or_none()
-            movies = Movies.query.filter(Movies.id == movie_id).one_or_none()
+            movies = Movie.query.filter(Movie.id == movie_id).one_or_none()
 
             if actor is None or movies is None:               
                     return not_found(404)
@@ -134,7 +173,7 @@ def create_app(test_config=None):
         try:
             #print (f"drink_id: {drink_id}")
             actor = Actor.query.filter(Actor.id == actor_id).one_or_none()
-            movies = Movies.query.filter(Movies.id == movie_id).one_or_none()
+            movies = Movie.query.filter(Movie.id == movie_id).one_or_none()
             #print(f"drink: {drink}")
             if actor is None or movies is None:
                 return not_found(404)
