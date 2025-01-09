@@ -12,7 +12,7 @@ def create_app(test_config=None):
 
     @app.route('/actors',methods=['GET'])
     @requires_auth('get:actors')
-    def get_actors():
+    def get_actors(self):
       try:
         actors = Actor.query.order_by(Actor.id).all()
         print (f"actors: {actors}")
@@ -28,7 +28,7 @@ def create_app(test_config=None):
 
     @app.route('/movies',methods=['GET'])
     @requires_auth('get:movies')
-    def get_movies():
+    def get_movies(self):
       try:
         movies = Movie.query.order_by(Movie.id).all()
         print (f"movies: {movies}")
@@ -45,7 +45,7 @@ def create_app(test_config=None):
 
     @app.route('/actors',methods=['POST'])
     @requires_auth('post:actors')
-    def create_actor():  
+    def create_actor(self):  
         body = request.get_json()
 
         #Actor
@@ -75,7 +75,7 @@ def create_app(test_config=None):
         
     @app.route('/movies',methods=['POST'])
     @requires_auth('post:movies')
-    def create_movies():  
+    def create_movies(self):  
         body = request.get_json()
        
         #Movie
