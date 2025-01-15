@@ -1,14 +1,72 @@
-#import os
-from flask import Flask,jsonify,request
+from os import environ as env
+#from urllib import response
+from flask import Flask,jsonify,request,redirect, url_for,session,render_template
 from flask_cors import CORS
-#import json
+import json
 from models import setup_db, Actor,Movie
 from Authentication.auth import AuthError, requires_auth
+from dotenv import find_dotenv, load_dotenv
+from authlib.integrations.flask_client import OAuth
+from urllib.parse import quote_plus, urlencode
+
+ENV_FILE = find_dotenv()
+if ENV_FILE:
+    load_dotenv(ENV_FILE)
+
+API_AUDIENCE = env.get("API_AUDIENCE")
+CLIENT_ID = env.get("CLIENT_ID")
+CALLBACK_URI = env.get("CALLBACK_URI")
 
 def create_app(test_config=None):
     app = Flask(__name__)
-    setup_db(app)
-    CORS(app)
+    app.secret_key = env.get("APP_SECRET_KEY")
+    with app.app_context():
+        setup_db(app)
+        CORS(app)
+        oauth = OAuth(app)
+
+    oauth.register(
+        "auth0",
+        client_id=env.get("AUTH0_CLIENT_ID"),
+        client_secret=env.get("AUTH0_CLIENT_SECRET"),
+        client_kwargs={
+            "response_type": "token",
+            "scope": "openid profile email"
+        },
+        server_metadata_url=f'https://{env.get("AUTH0_DOMAIN")}/.well-known/openid-configuration'
+    )
+
+    @app.route("/login")
+    def login():
+        return oauth.auth0.authorize_redirect(
+            redirect_uri=url_for("callback", _external=True)
+        )
+    
+    @app.route("/callback", methods=["GET", "POST"])
+    def callback():
+        token = oauth.auth0.authorize_access_token()
+        session["user"] = token
+        return redirect("/")    
+    
+
+    @app.route("/")
+    def home():
+        return render_template("home.html", session=session.get('user'), pretty=json.dumps(session.get('user'), indent=4))
+    
+    @app.route("/logout")
+    def logout():
+        session.clear()
+        return redirect(
+            "https://" + env.get("AUTH0_DOMAIN")
+            + "/v2/logout?"
+            + urlencode(
+                {
+                    "returnTo": url_for("home", _external=True),
+                    "client_id": env.get("AUTH0_CLIENT_ID"),
+                },
+                quote_via=quote_plus,
+            )
+        )
 
     @app.route('/actors',methods=['GET'])
     @requires_auth('get:actors')
@@ -21,7 +79,7 @@ def create_app(test_config=None):
         if len(formated_actors) ==0:
             return not_found(404)
         else:
-            return jsonify({ "success": True, "actors": formated_actors})
+            return jsonify({ "success": True, "Actors": formated_actors})
       except Exception as ex:
         print(ex)
       return unprocessable(422)
@@ -37,7 +95,7 @@ def create_app(test_config=None):
         if len(formated_movies) ==0:
             return not_found(404)
         else:
-            return jsonify({ "success": True, "movies": formated_movies})
+            return jsonify({ "success": True, "Movies": formated_movies})
       except Exception as ex:
         print(ex)
       return unprocessable(422)
@@ -49,9 +107,9 @@ def create_app(test_config=None):
         body = request.get_json()
 
         #Actor
-        full_name = body["full_name"]
-        age = body["age"]
-        gender = body["gender"]
+        full_name = body.get["full_name"]
+        age = body.get["age"]
+        gender = body.get["gender"]
         movie_ids = body.get("movie_ids") # List of associated movie IDs
         try:
             if full_name =='' or age is None or gender is None:
@@ -84,10 +142,10 @@ def create_app(test_config=None):
         body = request.get_json()
        
         #Movie
-        title = body["title"]
-        release_date = body["release_date"]
-        duration = body["duration"]
-        imdb_rating = body["imdb_rating"] 
+        title = body.get["title"]
+        release_date = body.get["release_date"]
+        duration = body.get["duration"]
+        imdb_rating = body.get["imdb_rating"] 
         actor_ids = body.get("actor_ids") # List of associated actor IDs
         try:
             
@@ -112,7 +170,7 @@ def create_app(test_config=None):
             return unprocessable(422)
    
         
-    @app.route('/Actor/<int:actor_id>',methods=['PATCH'])
+    @app.route('/actors/<int:actor_id>',methods=['PATCH'])
     @requires_auth('patch:actors')
     def update_actor(self,actor_id):  
         body = request.get_json()
@@ -126,18 +184,21 @@ def create_app(test_config=None):
             if actor is None:               
                     return not_found(404)
             else:
-                actor.full_name = new_full_name
-                actor.age = new_age
-                actor.gender = new_gender 
+                if new_full_name is not None:
+                    actor.full_name = new_full_name
+                elif new_age is not None:
+                    actor.age = new_age
+                elif new_gender is not None:
+                    actor.gender = new_gender 
                 
                 actor.update()
                 
-                return jsonify({ "success": True, "actor": [actor.format()]})
+                return jsonify({ "success": True, "Actor": [actor.format()]})
         except Exception as ex:
             print(ex)
             return unprocessable(422)
 
-    @app.route('/Movie/<int:movie_id>',methods=['PATCH'])
+    @app.route('/movies/<int:movie_id>',methods=['PATCH'])
     @requires_auth('patch:movies')
     def update_movie(self,movie_id):  
         body = request.get_json()
@@ -153,21 +214,23 @@ def create_app(test_config=None):
             if movies is None:               
                     return not_found(404)
             else:
-             
-                movies.title = new_title
-                movies.release_date = new_release_date
-                movies.duration = new_duration
-                movies.imdb_rating = new_imdb_rating
+                if  new_title is not None:  
+                    movies.title = new_title
+                elif new_release_date is not None:
+                    movies.release_date = new_release_date
+                elif new_duration is not None:
+                    movies.duration = new_duration
+                elif new_imdb_rating is not None:    
+                    movies.imdb_rating = new_imdb_rating
 
                 movies.update()
-                
                 return jsonify({ "success": True, "Movie": [movies.format()]})
         except Exception as ex:
             print(ex)
             return unprocessable(422)
 
 
-    @app.route('/actor/<int:actor_id>',methods=['DELETE'])
+    @app.route('/actors/<int:actor_id>',methods=['DELETE'])
     @requires_auth('delete:actors')
     def delete_actor(self,actor_id):
         try:
@@ -248,4 +311,4 @@ def create_app(test_config=None):
 app = create_app()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0",debug=True)

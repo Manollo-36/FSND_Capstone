@@ -28,12 +28,8 @@ Producer_jwt = {
 
 class TriviaTestCase(unittest.TestCase):
     def setUp(self):
-        """Define test variables and initialize app."""
-        # self.database_name = "trivia_test"
-        # self.database_user = "Emmanuel"
-        # self.database_password = "Manos"
-        # self.database_host = "localhost:5432"
-        self.database_path = database_path #f"postgresql://{self.database_user}:{self.database_password}@{self.database_host}/{self.database_name}"
+        """Define test variables and initialize app."""     
+        self.database_path = database_path 
 
         # Create app with the test configuration
         self.app = create_app({
