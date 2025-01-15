@@ -52,7 +52,7 @@ def create_app(test_config=None):
         full_name = body["full_name"]
         age = body["age"]
         gender = body["gender"]
-       
+        movie_ids = body.get("movie_ids") # List of associated movie IDs
         try:
             if full_name =='' or age is None or gender is None:
                 return bad_request(400)
@@ -65,6 +65,11 @@ def create_app(test_config=None):
     
                         #recipe= json.dumps(new_recipe)
                     )
+                #Associate the actor with movies if movie_ids are provided
+                if movie_ids:
+                    movies = Movie.query.filter(Movie.id.in_(movie_ids)).all()
+                    new_actor.movie_cast.extend(movies)
+              
                 new_actor.insert()
 
                 response = { "success": True,"New_Actor":new_actor.id, "Actor": [new_actor.format()]}
@@ -83,18 +88,21 @@ def create_app(test_config=None):
         release_date = body["release_date"]
         duration = body["duration"]
         imdb_rating = body["imdb_rating"] 
-       
+        actor_ids = body.get("actor_ids") # List of associated actor IDs
         try:
             
             if title == "" or release_date is None or  duration is None or imdb_rating is None:
                 return bad_request(400)
-            else:               
+            else: 
                 new_movie = Movie(
                     title =title,
                     release_date =release_date,
                     duration= duration,
                     imdb_rating = imdb_rating
                 )
+                if actor_ids:
+                    actors = Actor.query.filter(Actor.id.in_(actor_ids)).all()
+                    new_movie.cast.extend(actors)
                 new_movie.insert() 
 
                 response = { "success": True,"New Movie":new_movie.id, "Movie":[new_movie.format()]}
@@ -240,4 +248,4 @@ def create_app(test_config=None):
 app = create_app()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
+    app.run(debug=True)
